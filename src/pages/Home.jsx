@@ -128,34 +128,24 @@ Join us next Sunday — because every pair of hands counts. 🙏`,
 
 
 export default function Home() {
-  const [posts,   setPosts]   = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [posts,   setPosts]   = useState(DEMO_POSTS);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     search: '', month: '', location: '', driveType: 'All Types',
   });
 
-  // Fetch posts on mount — with 8s timeout fallback to demo data
+  // Fetch posts on mount if Firebase is configured
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      // If Firebase hasn't responded in 8s, show demo posts
-      setPosts(DEMO_POSTS);
-      setLoading(false);
-    }, 8000);
-
     fetchPublishedPosts()
       .then(data => {
-        clearTimeout(timeout);
-        // If Firebase is configured but empty, still show demos
-        setPosts(data.length > 0 ? data : DEMO_POSTS);
+        if (data && data.length > 0) {
+          setPosts(data);
+        }
       })
       .catch(() => {
-        clearTimeout(timeout);
-        // Firebase not configured — show demo posts
+        // Fallback to DEMO_POSTS on error
         setPosts(DEMO_POSTS);
-      })
-      .finally(() => setLoading(false));
-
-    return () => clearTimeout(timeout);
+      });
   }, []);
 
 

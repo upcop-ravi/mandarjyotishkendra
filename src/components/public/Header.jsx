@@ -38,10 +38,10 @@ export default function Header() {
             <Leaf className="w-5 h-5 text-white" />
           </div>
           <div>
-            <p className="font-heading font-bold text-lg leading-none text-primary-800">
+            <p className="font-heading font-bold text-lg leading-none text-white">
               NourishHope
             </p>
-            <p className="text-xs text-primary-600 font-medium leading-none mt-0.5">
+            <p className="text-xs text-white font-medium leading-none mt-0.5">
               Foundation
             </p>
           </div>

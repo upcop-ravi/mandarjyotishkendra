@@ -120,7 +120,7 @@ export default function Footer() {
             </li>
             <li className="flex items-start gap-2">
               <MapPin className="w-4 h-4 mt-0.5 text-amber-400 shrink-0" />
-              123 Green Street, Sector 4, Delhi – 110001
+              Near Ram Vatika, Sachin Tendulkar Road, Kailash Nagar, Govindpuri, Gwalior, Madhya Pradesh 474011
             </li>
           </ul>
         </div>

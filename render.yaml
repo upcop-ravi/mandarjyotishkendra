@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: nourishhope-ngo-blog
+    name: mandarjyotishkendra-blog
     env: static
     buildCommand: npm run build
     staticPublishPath: dist
     routes:
       - type: rewrite
-        source: /*
+        source: /admin/*
         destination: /index.html

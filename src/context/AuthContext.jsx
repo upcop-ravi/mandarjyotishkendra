@@ -9,14 +9,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
+    if (!auth) {
+      setUser(null);
       setLoading(false);
-    });
-    return unsub;
+      return;
+    }
+    try {
+      const unsub = onAuthStateChanged(auth, (u) => {
+        setUser(u);
+        setLoading(false);
+      });
+      return unsub;
+    } catch (err) {
+      console.warn('Firebase auth listener error:', err.message);
+      setUser(null);
+      setLoading(false);
+    }
   }, []);
 
-  const logout = () => signOut(auth);
+  const logout = () => {
+    if (auth) return signOut(auth);
+    setUser(null);
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, logout }}>

@@ -23,15 +23,20 @@ export default function Login() {
 
     setLoading(true);
     try {
+      if (!auth) {
+        throw { code: 'auth/unconfigured' };
+      }
       await signInWithEmailAndPassword(auth, email.trim(), password);
       navigate('/admin/dashboard', { replace: true });
     } catch (err) {
       const msg = {
+        'auth/unconfigured':        'Firebase Auth is unconfigured. Please add your credentials to .env file.',
         'auth/invalid-credential':  'Invalid email or password. Please try again.',
         'auth/user-not-found':      'No account found with this email.',
         'auth/wrong-password':      'Incorrect password. Please try again.',
         'auth/too-many-requests':   'Too many failed attempts. Please try again later.',
         'auth/network-request-failed': 'Network error. Please check your connection.',
+        'auth/invalid-api-key':      'Invalid Firebase API Key. Please check your .env credentials.',
       }[err.code] ?? 'Login failed. Please check your credentials.';
       setError(msg);
     } finally {

@@ -1,7 +1,6 @@
 // src/lib/firebase.js
 // ─────────────────────────────────────────────────────────
-// Firebase SDK initialization. Replace the values below with
-// your actual Firebase project credentials from the Console.
+// Firebase SDK initialization with safe fallback for unconfigured environments
 // ─────────────────────────────────────────────────────────
 
 import { initializeApp } from 'firebase/app';
@@ -31,31 +30,68 @@ const firebaseConfig = {
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-const app        = initializeApp(firebaseConfig);
-export const auth    = getAuth(app);
-export const db      = getFirestore(app);
-export const storage = getStorage(app);
+// Check if valid Firebase configuration is supplied
+export const isFirebaseConfigured = Boolean(
+  firebaseConfig.apiKey &&
+  firebaseConfig.apiKey !== 'YOUR_API_KEY' &&
+  !firebaseConfig.apiKey.includes('undefined')
+);
+
+let app = null;
+let auth = null;
+let db = null;
+let storage = null;
+
+if (isFirebaseConfigured) {
+  try {
+    app     = initializeApp(firebaseConfig);
+    auth    = getAuth(app);
+    db      = getFirestore(app);
+    storage = getStorage(app);
+  } catch (err) {
+    console.warn('Firebase initialization warning:', err.message);
+  }
+}
+
+export { auth, db, storage };
 
 // ── Post helpers ──────────────────────────────────────────
-export const postsRef = () => collection(db, 'posts');
-
 export async function fetchPublishedPosts() {
-  const q = query(
-    collection(db, 'posts'),
-    where('status', '==', 'published'),
-    orderBy('date', 'desc')
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (!isFirebaseConfigured || !db) {
+    return [];
+  }
+  try {
+    const q = query(
+      collection(db, 'posts'),
+      where('status', '==', 'published'),
+      orderBy('date', 'desc')
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn('Firestore fetchPublishedPosts error:', err.message);
+    return [];
+  }
 }
 
 export async function fetchAllPosts() {
-  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (!isFirebaseConfigured || !db) {
+    return [];
+  }
+  try {
+    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (err) {
+    console.warn('Firestore fetchAllPosts error:', err.message);
+    return [];
+  }
 }
 
 export async function createPost(data) {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured. Please set your credentials in .env');
+  }
   return addDoc(collection(db, 'posts'), {
     ...data,
     createdAt: Timestamp.now(),
@@ -64,6 +100,9 @@ export async function createPost(data) {
 }
 
 export async function updatePost(id, data) {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured. Please set your credentials in .env');
+  }
   return updateDoc(doc(db, 'posts', id), {
     ...data,
     updatedAt: Timestamp.now(),
@@ -71,26 +110,40 @@ export async function updatePost(id, data) {
 }
 
 export async function deletePost(id) {
+  if (!isFirebaseConfigured || !db) {
+    throw new Error('Firebase is not configured. Please set your credentials in .env');
+  }
   return deleteDoc(doc(db, 'posts', id));
 }
 
 export async function getPost(id) {
-  const snap = await getDoc(doc(db, 'posts', id));
-  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  if (!isFirebaseConfigured || !db) {
+    return null;
+  }
+  try {
+    const snap = await getDoc(doc(db, 'posts', id));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+  } catch (err) {
+    return null;
+  }
 }
 
 // ── Storage helpers ───────────────────────────────────────
 export async function uploadImage(file, path) {
+  if (!isFirebaseConfigured || !storage) {
+    throw new Error('Firebase Storage is not configured.');
+  }
   const storageRef = ref(storage, path);
   await uploadBytes(storageRef, file);
   return getDownloadURL(storageRef);
 }
 
 export async function deleteImage(url) {
+  if (!isFirebaseConfigured || !storage) return;
   try {
     const storageRef = ref(storage, url);
     await deleteObject(storageRef);
-  } catch (_) { /* ignore if already deleted */ }
+  } catch (_) { /* ignore */ }
 }
 
 export { Timestamp };
